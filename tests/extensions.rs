@@ -122,6 +122,48 @@ fn a_dotfile_that_looks_like_a_tarball_is_not_one() {
     assert!(dir.path().join("gz/.tar.gz").exists());
 }
 
+/// `Path::extension()` reports `Some("")` for a name ending in a dot, and an
+/// empty folder name resolves to the directory itself, so these used to be
+/// reported as colliding with their own destination and never moved.
+#[test]
+fn a_name_ending_in_a_dot_is_extensionless() {
+    let dir = TempDir::new("trailing-dot");
+    // A compound suffix that is itself followed by a dot is still no
+    // extension: "archive.tar.gz." matches neither "tar.gz" nor "gz".
+    let names = ["foo.", "a.b.", "archive.tar.gz."];
+    for name in names {
+        fs::write(dir.path().join(name), "bytes").unwrap();
+    }
+
+    let (ok, stdout) = run(dir.path(), true);
+    assert!(ok, "a dry run does not fail: {stdout}");
+    for name in names {
+        let source = dir.path().join(name);
+        assert!(
+            has_line(
+                &stdout,
+                &format!("would move {} -> misc/", source.display())
+            ),
+            "{name} has no extension and belongs in misc/, got: {stdout}"
+        );
+    }
+
+    let (ok, stdout) = run(dir.path(), false);
+    assert!(ok, "nothing failed: {stdout}");
+    for name in names {
+        let source = dir.path().join(name);
+        assert!(
+            has_line(&stdout, &format!("moved {} -> misc/", source.display())),
+            "got: {stdout}"
+        );
+        assert!(
+            dir.path().join("misc").join(name).exists(),
+            "{name} was not moved into misc/"
+        );
+        assert!(!source.exists(), "{name} was left in the root");
+    }
+}
+
 /// The compound check needs the whole name as UTF-8; a name that is not must
 /// still be classified by its extension rather than dropped into misc/.
 #[cfg(unix)]

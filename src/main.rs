@@ -181,10 +181,15 @@ fn extension_for(path: &Path) -> String {
             }
         }
     }
+    // Path::extension() returns Some("") for a name that ends in a dot
+    // ("foo."), and an empty folder name is the directory itself, so the file
+    // would collide with its own destination. An empty extension is no
+    // extension: it belongs in misc/ next to the extensionless files.
     path.extension()
         .and_then(|ext| ext.to_str())
-        .unwrap_or("misc")
-        .to_lowercase()
+        .map(str::to_lowercase)
+        .filter(|ext| !ext.is_empty())
+        .unwrap_or_else(|| "misc".to_string())
 }
 
 fn plural(count: usize, word: &str) -> String {

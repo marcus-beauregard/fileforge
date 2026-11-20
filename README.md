@@ -7,7 +7,8 @@ My first serious Rust project: clap for args, std::fs for the heavy lifting.
 ## Which folder a file goes to
 
 The folder is the file's extension, lowercased: `notes.TXT` -> `txt/`, and a
-file with no extension goes to `misc/`.
+file with no extension goes to `misc/`. A trailing dot is not an extension —
+`foo.` and `a.b.` are extensionless, so they go to `misc/` too.
 
 Five two-dot archive suffixes are matched before the last dot, so one archive
 is not split away from its own type:
