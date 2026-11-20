@@ -158,7 +158,29 @@ fn organize(path: &Path, dir: &Path, ext: &str, dry_run: bool) -> io::Result<Out
     Ok(Outcome::Moved)
 }
 
+/// Archive suffixes that carry two dots. Longest first, so `backup.tar.gz`
+/// lands in `tar.gz/` rather than being split into `gz/` next to single-file
+/// `.gz` logs. The folder name is still derived from the file name alone.
+const COMPOUND_SUFFIXES: [&str; 5] = ["tar.bz2", "tar.zst", "tar.gz", "tar.xz", "tar.z"];
+
 fn extension_for(path: &Path) -> String {
+    if let Some(name) = path.file_name() {
+        // Lossy rather than to_str: a name whose stem is not valid UTF-8 still
+        // ends in an ASCII suffix, and only the suffix has to match. Invalid
+        // bytes become U+FFFD, which cannot spell a dot or a letter, so the
+        // check below stays as strict as it was.
+        let lower = name.to_string_lossy().to_lowercase();
+        // The dot before the suffix has to be there: a file literally named
+        // ".tar.gz" is a dotfile, not a tarball, and stays in gz/.
+        for suffix in COMPOUND_SUFFIXES {
+            if lower.len() > suffix.len() + 1
+                && lower.ends_with(suffix)
+                && lower.as_bytes()[lower.len() - suffix.len() - 1] == b'.'
+            {
+                return (*suffix).to_string();
+            }
+        }
+    }
     path.extension()
         .and_then(|ext| ext.to_str())
         .unwrap_or("misc")

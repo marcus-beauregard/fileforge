@@ -4,6 +4,25 @@ A Rust CLI that organizes a messy folder by moving files into per-extension
 subfolders. Has a --dry-run flag so you can preview before committing.
 My first serious Rust project: clap for args, std::fs for the heavy lifting.
 
+## Which folder a file goes to
+
+The folder is the file's extension, lowercased: `notes.TXT` -> `txt/`, and a
+file with no extension goes to `misc/`.
+
+Five two-dot archive suffixes are matched before the last dot, so one archive
+is not split away from its own type:
+
+```sh
+$ fileforge ~/Downloads --dry-run
+would move /home/me/Downloads/backup.tar.gz -> tar.gz/
+would move /home/me/Downloads/source.tar.xz -> tar.xz/
+would move /home/me/Downloads/logs.gz -> gz/
+```
+
+`tar.gz`, `tar.bz2`, `tar.xz`, `tar.zst`, `tar.z`; matching is
+case-insensitive. Everything else uses the last dot, so `gz/` holds single-file
+gzip and tarballs stay in `tar.gz/`.
+
 ## Behaviour
 
 - A file whose destination name is already taken is left alone and reported
