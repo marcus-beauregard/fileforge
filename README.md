@@ -1,44 +1,54 @@
+<div align="center">
+
+<img src="assets/logo-512.png" width="96" alt="fileforge">
+
 # fileforge
 
-A Rust CLI that organizes a messy folder by moving files into per-extension
-subfolders. Has a --dry-run flag so you can preview before committing.
-My first serious Rust project: clap for args, std::fs for the heavy lifting.
+**A Rust CLI that tidies a folder by moving files into per-extension subfolders.**
 
-## Which folder a file goes to
+[![CI](https://github.com/marcus-beauregard/fileforge/actions/workflows/ci.yml/badge.svg)](https://github.com/marcus-beauregard/fileforge/actions/workflows/ci.yml)
+[![License: GPL-2.0-or-later](https://img.shields.io/badge/license-GPL--2.0--or--later-blue.svg)](LICENSE)
 
-The folder is the file's extension, lowercased: `notes.TXT` -> `txt/`, and a
-file with no extension goes to `misc/`. A trailing dot is not an extension —
-`foo.` and `a.b.` are extensionless, so they go to `misc/` too.
+</div>
 
-Five two-dot archive suffixes are matched before the last dot, so one archive
-is not split away from its own type:
+## Quick start
 
-```sh
-$ fileforge ~/Downloads --dry-run
-would move /home/me/Downloads/backup.tar.gz -> tar.gz/
-would move /home/me/Downloads/source.tar.xz -> tar.xz/
-would move /home/me/Downloads/logs.gz -> gz/
+```bash
+cargo build --release
+./target/release/fileforge ~/Downloads --dry-run    # print the plan, move nothing
+./target/release/fileforge ~/Downloads              # do it
 ```
 
-`tar.gz`, `tar.bz2`, `tar.xz`, `tar.zst`, `tar.z`; matching is
-case-insensitive. Everything else uses the last dot, so `gz/` holds single-file
-gzip and tarballs stay in `tar.gz/`.
+Or install it on your PATH:
 
-## Behaviour
-
-- A file whose destination name is already taken is left alone and reported
-  as `skipped ... (already exists)`. Nothing is ever overwritten.
-- A move that fails does not end the run: fileforge names the file, says what
-  it was trying to do, and carries on with the rest. An entry it cannot even
-  inspect is reported the same way rather than dropped.
-- A run that can read the directory ends with a summary line,
-  `organized N files, skipped M`, and exits 1 if any move failed. Name
-  collisions alone are not a failure. If the directory itself cannot be read,
-  fileforge says so and exits 1 without a summary.
-
-```sh
-$ fileforge ~/Downloads
-moved /home/me/Downloads/a.pdf -> pdf/
-skipped /home/me/Downloads/b.pdf -> pdf/: cannot move to /home/me/Downloads/pdf/b.pdf: Permission denied (os error 13)
-organized 1 file, skipped 1
+```bash
+cargo install --path .
+fileforge ~/Downloads --dry-run
 ```
+
+## What it does
+
+Reads the directory, groups files by extension, and moves each into a subfolder named after that extension — ```.png``` becomes ```png/```. ```--dry-run``` prints the plan and exits without touching anything.
+
+Destination collisions are checked before the rename, because ```rename(2)``` would otherwise replace an existing file without a word.
+
+## Develop
+
+```bash
+cargo test
+cargo fmt --check
+```
+
+## Known gaps
+
+Nested subdirectories are ignored (#5), and the collision check and the rename are separate calls, leaving a window between them (#6).
+
+## Contributing
+
+Humans and automated agents are both welcome. There is no CLA — every commit carries a [DCO](https://developercertificate.org/) sign-off (**git commit -s**).
+
+Start with a [good first issue](https://github.com/marcus-beauregard/fileforge/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22), or read [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Licence
+
+GPL-2.0-or-later — see [LICENSE](LICENSE). Copyright (C) 2026 Marcus Beauregard.
